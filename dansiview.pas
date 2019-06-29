@@ -19,6 +19,7 @@ public
   property Current: AnsiChar read GetCurrent;
 end;
 
+PAnsiView = ^TAnsiView;
 TAnsiView = record
 private
   FData: PAnsiChar;
@@ -31,6 +32,9 @@ public
   // Pseudo constructor and destructor
   procedure Init(Data: PAnsiChar; Length: SizeUInt);
   procedure Done; inline;
+
+  // Returns Length - 1
+  function High: SizeInt; inline;
 
   // Returns enumerator (for for-in loops support)
   function GetEnumerator: TAnsiEnumerator; inline;
@@ -64,23 +68,25 @@ public
 end;
 
 // Handy constructors
+function AnsiView(A: TAnsiView): TAnsiView; inline;
 function AnsiView(Data: PAnsiChar; Tail: PAnsiChar): TAnsiView; inline;
 function AnsiView(Data: PAnsiChar; Size: SizeUInt): TAnsiView; inline;
 
 // Classic pascal string routines
-function Copy(const S: TAnsiView; Index: SizeInt; Count: SizeInt): TAnsiView; overload;
-function Pos(const SubStr: TAnsiView; S: TAnsiView): SizeInt; overload;
-function Pos(C: AnsiChar; const S: TAnsiView): SizeInt; inline; overload;
-function Low(const S: TAnsiView): SizeInt; inline; overload;
-function High(const S: TAnsiView): SizeInt; inline; overload;
-function Length(const S: TAnsiView): SizeInt; inline; overload;
-procedure Insert(const Source: TAnsiView; var S: AnsiString; Index: SizeInt); inline; overload;
-function TrimRight(S: TAnsiView): TAnsiView; overload;
-function TrimLeft(S: TAnsiView): TAnsiView; overload;
-function Trim(const S: TAnsiView): TAnsiView; inline; overload;
+// See dansiview_overloads.pas for functions without the Ansi prefix
+function AnsiCopy(const S: TAnsiView; Index: SizeInt; Count: SizeInt): TAnsiView; overload;
+function AnsiPos(const SubStr: TAnsiView; S: TAnsiView): SizeInt; overload;
+function AnsiPos(C: AnsiChar; const S: TAnsiView): SizeInt; inline; overload;
+function AnsiLow(const S: TAnsiView): SizeInt; inline; overload;
+function AnsiHigh(const S: TAnsiView): SizeInt; inline; overload;
+function AnsiLength(const S: TAnsiView): SizeInt; inline; overload;
+procedure AnsiInsert(const Source: TAnsiView; var S: AnsiString; Index: SizeInt); inline; overload;
+function AnsiTrimRight(S: TAnsiView): TAnsiView; overload;
+function AnsiTrimLeft(S: TAnsiView): TAnsiView; overload;
+function AnsiTrim(const S: TAnsiView): TAnsiView; inline; overload;
 
 //
-//  Split
+//  AnsiSplit
 //
 //      Splits a string by the specified delimiter.
 //
@@ -92,27 +98,28 @@ function Trim(const S: TAnsiView): TAnsiView; inline; overload;
 //  Returns:
 //
 //      Result: True if S contains Delim, False otherwise
-//      Left: contains part of the string before the Delim if Result=True
-//      Right: contains part of the string after the Delim if Result=True
+//      Left: part of the string before the Delim if Result=True
+//      Right: part of the string after the Delim if Result=True
 //
-function Split(const S: TAnsiView;
-               const Delim: TAnsiView;
-               out Left: TAnsiView;
-               out Right: TAnsiView): Boolean; overload;
+function AnsiSplit(const S: TAnsiView;
+                   const Delim: TAnsiView;
+                   out Left: TAnsiView;
+                   out Right: TAnsiView): Boolean; overload;
 
 // Some implicit conversions
 operator := (P: PAnsiChar): TAnsiView; inline;
-operator := (const S: AnsiString): TAnsiView; inline;
+operator := (constref S: AnsiString): TAnsiView; inline;
 operator := (const S: ShortString): TAnsiView; inline;
 operator := (const Buf: array of AnsiChar): TAnsiView; inline;
 
 // Comparison operators
-operator = (A, B: TAnsiView): Boolean; inline;
-operator < (A, B: TAnsiView): Boolean; inline;
-operator > (A, B: TAnsiView): Boolean; inline;
-operator <= (A, B: TAnsiView): Boolean; inline;
-operator >= (A, B: TAnsiView): Boolean; inline;
-operator in (A, B: TAnsiView): Boolean;
+operator = (const A, B: TAnsiView): Boolean; inline;
+operator < (const A, B: TAnsiView): Boolean; inline;
+operator > (const A, B: TAnsiView): Boolean; inline;
+operator <= (const A, B: TAnsiView): Boolean; inline;
+operator >= (const A, B: TAnsiView): Boolean; inline;
+operator in (const A, B: TAnsiView): Boolean; inline;
+operator in (C: AnsiChar; const A: TAnsiView): Boolean; inline;
 
 implementation
 
@@ -155,7 +162,7 @@ end;
 
 function TAnsiView.GetTail: PAnsiChar;
 begin
-  Result := FData + FLength
+  Result := FData + FLength;
 end;
 
 procedure TAnsiView.SetTail(Tail: PAnsiChar);
@@ -203,6 +210,11 @@ begin
   Result := ((_End - Beg) >= Postfix.Length) and (CompareByte((FData + _End - Postfix.Length)^, Postfix.Data^, Postfix.Length) = 0);
 end;
 
+function TAnsiView.High: SizeInt;
+begin
+  Result := Length - 1;
+end;
+
 function TAnsiView.GetEnumerator: TAnsiEnumerator;
 begin
   Result.FCurrent := FData - 1;
@@ -224,6 +236,11 @@ begin
   Result := _Compare(Self, Other);
 end;
 
+function AnsiView(A: TAnsiView): TAnsiView;
+begin
+  Result := A;
+end;
+
 function AnsiView(Data: PAnsiChar; Tail: PAnsiChar): TAnsiView;
 begin
   Result.FData := Data;
@@ -236,7 +253,7 @@ begin
   Result.FLength := Size;
 end;
 
-function Copy(const S: TAnsiView; Index: SizeInt; Count: SizeInt): TAnsiView;
+function AnsiCopy(const S: TAnsiView; Index: SizeInt; Count: SizeInt): TAnsiView;
 begin
   Result.Data := S.Data + Index - 1;
   if Result.Data > S.Tail then
@@ -246,7 +263,7 @@ begin
     Result.Tail := S.Tail;
 end;
 
-function Pos(const SubStr: TAnsiView; S: TAnsiView): SizeInt;
+function AnsiPos(const SubStr: TAnsiView; S: TAnsiView): SizeInt;
 begin
   if SubStr.Length <= 0 then
     Exit(1);
@@ -259,27 +276,27 @@ begin
   end;
 end;
 
-function Pos(C: AnsiChar; const S: TAnsiView): SizeInt;
+function AnsiPos(C: AnsiChar; const S: TAnsiView): SizeInt;
 begin
   Result := IndexChar(S.Data^, S.Length, C) + 1;
 end;
 
-function Length(const S: TAnsiView): SizeInt;
+function AnsiLength(const S: TAnsiView): SizeInt;
 begin
   Result := S.Length;
 end;
 
-function Low(const S: TAnsiView): SizeInt;
+function AnsiLow(const S: TAnsiView): SizeInt;
 begin
   Result := 1;
 end;
 
-function High(const S: TAnsiView): SizeInt;
+function AnsiHigh(const S: TAnsiView): SizeInt;
 begin
   Result := S.Length;
 end;
 
-procedure Insert(const Source: TAnsiView; var S: AnsiString; Index: SizeInt);
+procedure AnsiInsert(const Source: TAnsiView; var S: AnsiString; Index: SizeInt);
 var
   OldLength: SizeInt;
 begin
@@ -292,7 +309,7 @@ end;
 const
   WHITESPACE = [#9,#10,#13,#32];
 
-function TrimRight(S: TAnsiView): TAnsiView;
+function AnsiTrimRight(S: TAnsiView): TAnsiView;
 begin
   while S.Length > 0 do begin
     if not (S[S.Length] in WHITESPACE) then
@@ -302,7 +319,7 @@ begin
   Result := S;
 end;
 
-function TrimLeft(S: TAnsiView): TAnsiView;
+function AnsiTrimLeft(S: TAnsiView): TAnsiView;
 var
   I: LongInt;
 begin
@@ -312,22 +329,22 @@ begin
       break;
     Inc(I);
   end;
-  Result := Copy(S, I, S.Length - I + 1);
+  Result := AnsiCopy(S, I, S.Length - I + 1);
 end;
 
-function Trim(const S: TAnsiView): TAnsiView;
+function AnsiTrim(const S: TAnsiView): TAnsiView;
 begin
-  Result := TrimRight(TrimLeft(S));
+  Result := AnsiTrimRight(AnsiTrimLeft(S));
 end;
 
-function Split(const S: TAnsiView;
-               const Delim: TAnsiView;
-               out Left: TAnsiView;
-               out Right: TAnsiView): Boolean;
+function AnsiSplit(const S: TAnsiView;
+                   const Delim: TAnsiView;
+                   out Left: TAnsiView;
+                   out Right: TAnsiView): Boolean;
 var
   P: SizeInt;
 begin
-  P := Pos(Delim, S);
+  P := AnsiPos(Delim, S);
   Result := P <> 0;
   if Result then begin
     Left := AnsiView(S.Data, P - 1);
@@ -341,7 +358,7 @@ begin
   Result.Tail := Result.Data + StrLen(P);
 end;
 
-operator := (const S: AnsiString): TAnsiView;
+operator := (constref S: AnsiString): TAnsiView;
 begin
   Result.Data := @S[1];
   Result.Length := System.Length(S);
@@ -359,36 +376,41 @@ begin
   Result.Tail := Result.Data + System.Length(Buf);
 end;
 
-operator = (A, B: TAnsiView): Boolean;
+operator = (const A, B: TAnsiView): Boolean;
 begin
   if A.Length <> B.Length then
     Exit(False);
   Result := CompareByte(A.Data^, B.Data^, A.Length) = 0;
 end;
 
-operator < (A, B: TAnsiView): Boolean;
+operator < (const A, B: TAnsiView): Boolean;
 begin
   Result := _Compare(A, B) < 0;
 end;
 
-operator > (A, B: TAnsiView): Boolean;
+operator > (const A, B: TAnsiView): Boolean;
 begin
   Result := _Compare(A, B) > 0;
 end;
 
-operator <= (A, B: TAnsiView): Boolean;
+operator <= (const A, B: TAnsiView): Boolean;
 begin
   Result := _Compare(A, B) <= 0;
 end;
 
-operator >= (A, B: TAnsiView): Boolean;
+operator >= (const A, B: TAnsiView): Boolean;
 begin
   Result := _Compare(A, B) >= 0;
 end;
 
-operator in (A, B: TAnsiView): Boolean;
+operator in (const A, B: TAnsiView): Boolean;
 begin
-  Result := Pos(A, B) <> 0;
+  Result := AnsiPos(A, B) <> 0;
+end;
+
+operator in (C: AnsiChar; const A: TAnsiView): Boolean;
+begin
+  Result := AnsiPos(C, A) <> 0;
 end;
 
 end.

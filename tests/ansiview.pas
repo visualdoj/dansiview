@@ -1,6 +1,10 @@
-{$MODE OBJFPC}
+{$MODE FPC}
+{$MODESWITCH ADVANCEDRECORDS}
+{$MODESWITCH OUT}
+{$MODESWITCH RESULT}
 uses
-  dansiview;
+  dansiview,
+  dansiview_overloads;
 
 var
   A: AnsiString;
@@ -14,17 +18,17 @@ begin
   Writeln('"', A.ToString, '" ?  "', B.ToString, '": =', A = B, ' <>', A <> B, ' <', A < B, ' <=', A <= B, ' >', A > B, ' >=', A >= B);
 end;
 
-// Valid if the setter is uncommented :(
+// Valid if the setter is uncommented
 //procedure TryToChangeConst(const S: TAnsiView);
 //begin
-//  S[0] := 'g';
+//  S[1] := 'g';
 //end;
 
 procedure It(const A: TAnsiView);
 var
   I: LongInt;
 begin
-  for I := Low(A) to High(A) do begin
+  for I := 0 to A.Length do begin
     Writeln(A[I]);
   end;
 end;
@@ -44,6 +48,7 @@ begin
   V := 'String literal';
   Writeln(Pos('r', V));
   Writeln(Length(V));
+  Writeln(High(V));
   Writeln(V.ToString);
   P := 'PAnsiChar';
   Writeln(Pos('n', P));
@@ -55,6 +60,9 @@ begin
   Writeln(Length(A));
   V := A;
   Writeln(V.ToString);
+  Writeln(Copy('xyz', 2, 2).ToString);
+  // dansiview_overloads
+  Writeln(Copy('xyz', 2, 2).ToString);
 
   TestCompare('aa', 'aa');
   TestCompare('aa', 'ab');
